@@ -1,7 +1,7 @@
 /*
 Project Table Tennis Digital Score
 
-Send IR commands to update displays following the Olympic Games Rules
+Send IR commands to update placarJogador1 following the Olympic Games Rules
 best of 5 sets until 11 each one. Deuce 
 
  */
@@ -10,7 +10,7 @@ best of 5 sets until 11 each one. Deuce
 #include <SerialDisplay.h>
 
 
-//RoboCore Remote Control
+//RoboCore Remote Control Map
 
 const long N0 = 0xFF6897;
 const long N1 = 0xFF30CF;
@@ -36,13 +36,29 @@ B100 = FF9867;
 B200 = FFB04F;
 */
 
+const long BMIN = 0xFFE01F;  //Botao de Menos - 
+const long BPLU = 0xFFA857;  //Botao de Mais +
+const long BEQU = 0xFF906F;  //Botao Zerar 0
+
 const int BPRV = 1;
 
 int RECV_PIN = 11;
 IRrecv irrecv(RECV_PIN);
 decode_results results;
 
-SerialDisplay displays(4,5,1); // (data, clock, number of modules)
+//Inicializa os Display 7 segmentos
+SerialDisplay placarJogador1(4,5,2); // (data, clock, number of modules)
+//SerialDisplay placarJogador2(X,X,2); // (data, clock, number of modules)
+
+//Pontuacao dos jogadores
+//Jogador 1
+byte PontosJogador1 = 0;
+byte P1Dezena = 0;
+byte P1Unidade = 0;
+byte P1Set = 0;
+
+
+byte PontosJogador2 = 0;
 
 void setup()
 {
@@ -53,62 +69,84 @@ void setup()
   irrecv.enableIRIn(); // Start the receiver
   Serial.println("Enabled IRin");
 
-//Displays Off
-  displays.Off(0);
-  displays.Info(&Serial);
+//Diplays Off
+  placarJogador1.Off(0);
+  placarJogador1.Info(&Serial);
   
 }
 
 void loop() {
+  
+  //Verifica se recebeu um comando de controle remoto
   if (irrecv.decode(&results)) {
     Serial.println(results.value, HEX);
 
-    switch (results.value){
+    //Enviar comando para cada botao apertado
+    switch (results.value){ 
       
     case N1:  //1
-      displays.Print(1);   
+      placarJogador1.Print(1);   
       break;
     case 16718055:  //2
-      displays.Print(2);   
+      placarJogador1.Print(2);   
       break;
 
     case 16743045:  //3
-      displays.Print(3);   
+      placarJogador1.Print(3);   
       break;
     
     case 16716015: //4
-      displays.Print(4);   
+      placarJogador1.Print(4);   
       break;
       
     case 16726215:  //5
-      displays.Print(5);   
+      placarJogador1.Print(5);   
       break;
       
     case 16734885:  //6
-      displays.Print(6);   
+      placarJogador1.Print(6);   
       break;
       
     case 16728765:  //7
-      displays.Print(7);   
+      placarJogador1.Print(7);   
       break;
       
     case 16730805: //8
-      displays.Print(8);   
+      placarJogador1.Print(8);   
       break;
       
     case 16732845:  //9
-      displays.Print(9);   
+      placarJogador1.Print(9);   
       break;
       
    case N0: //0
-      displays.Print(0);   
+      placarJogador1.Print(0);   
       break;
+   
+   case BMIN: //Botao Menos
+      
+      Serial.println("Botao Menos apertado");
+      alterarPlacar1(1);
+      break;
+
+   case BPLU: //Botao Mais
+      
+      Serial.println("Botao Mais apertado");
+      alterarPlacar1(2);
+      break;
+
+   case BEQU: //Botao Zerar
+      Serial.println("Botao Eq apertado");
+      alterarPlacar1(3);
+      break;
+   
    case 0xFFFFFFFF: // Repetition
       break;
       
     default: 
  
-      displays.Off(1);
+   //   placarJogador1.Off(1);
+   //   placarJogador1.Off(2);
       break;
   }
 
@@ -116,3 +154,54 @@ void loop() {
   }
   delay(100);
 }
+
+void alterarPlacar1(int comando) {
+  Serial.println(PontosJogador1);
+  Serial.println(comando);
+  
+  switch (comando){ 
+    case 1: //Subtrai do placar 1
+      if (PontosJogador1 != 0) {
+        PontosJogador1 = PontosJogador1 - 1;
+        
+      }
+
+     if (P1Unidade == 0) {
+        P1Dezena = P1Dezena - 1;
+        P1Unidade = 9;
+      }
+      else
+      { 
+        P1Unidade = P1Unidade - 1;
+      }
+      PontosJogador1 = PontosJogador1 - 1;
+
+      
+      break;
+
+    case 2: //Soma do placar 1
+      if (P1Unidade == 9) {
+        P1Dezena = P1Dezena + 1;
+        P1Unidade = 0;
+      }
+      else
+      { 
+        P1Unidade = P1Unidade + 1;
+      }
+      PontosJogador1 = PontosJogador1 + 1;
+      
+      break;
+    
+    case 3: //Zerar Placar 1
+      PontosJogador1 = 0;
+      P1Dezena = 0;
+      P1Unidade = 0;
+      break;
+
+  }
+  placarJogador1.Print(P1Unidade, 2);
+  placarJogador1.Print(P1Dezena, 1);
+  
+
+}
+
